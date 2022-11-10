@@ -3,6 +3,7 @@ package io.weber.service;
 import io.weber.exception.InvalidTransactionException;
 import io.weber.exception.NotFoundAccountException;
 import io.weber.exception.OverdraftException;
+import io.weber.printer.AccountStatementPrinter;
 import io.weber.repository.AccountRepository;
 import io.weber.repository.TransactionRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,6 +33,8 @@ public class NoOverdraftAccountServiceTest {
     private AccountRepository accountRepository;
     @Mock
     private TransactionRepository transactionRepository;
+    @Mock
+    private AccountStatementPrinter printer;
     @InjectMocks
     private NoOverdraftAccountService service;
 
@@ -203,4 +207,52 @@ public class NoOverdraftAccountServiceTest {
             verifyNoMoreInteractions(accountRepository);
         }
     }
+
+    @Nested
+    @DisplayName("when making a printAccountStatement")
+    class PrintAccountStatement {
+
+        @Test
+        @DisplayName("should not work with an unknown account")
+        void throwNotFoundAccountException() {
+            var accountId = UUID.randomUUID();
+            when(accountRepository.ifAccountExist(accountId)).thenReturn(false);
+
+            assertThrows(NotFoundAccountException.class,
+                    () -> service.printAccountStatement(accountId));
+
+            verify(accountRepository).ifAccountExist(accountId);
+            verifyNoMoreInteractions(accountRepository);
+        }
+
+        @Test
+        @DisplayName("should verify invok method")
+        void verifyInvokMethod() throws NotFoundAccountException{
+            var accountId = UUID.randomUUID();
+            when(accountRepository.ifAccountExist(accountId)).thenReturn(true);
+            when(transactionRepository.getAllTransactions(accountId)).thenReturn(generatedList(accountId));
+
+            service.printAccountStatement(accountId);
+
+            final var orderVerifier = inOrder(accountRepository, transactionRepository, printer);
+            orderVerifier.verify(accountRepository).ifAccountExist(accountId);
+            orderVerifier.verify(transactionRepository).getAllTransactions(accountId);
+            orderVerifier.verify(printer).print(generatedList(accountId));
+            orderVerifier.verifyNoMoreInteractions();
+
+        }
+
+        private List<Transaction> generatedList(UUID id1){
+
+            return List.of(new Transaction(id1, LocalDate.of(2022,1,20),new BigDecimal(100)
+                            .setScale(2, RoundingMode.HALF_EVEN), TransactionType.DEPOSIT,new BigDecimal(100).setScale(2, RoundingMode.HALF_EVEN)),
+                    new Transaction(id1,LocalDate.of(2022,2,16), BigDecimal.valueOf(-5.2)
+                            .setScale(2, RoundingMode.HALF_EVEN),TransactionType.WITHDRAW,new BigDecimal("94.8").setScale(2, RoundingMode.HALF_EVEN)),
+                    new Transaction(id1,LocalDate.of(2022,3,1),new BigDecimal(22)
+                            .setScale(2, RoundingMode.HALF_EVEN),TransactionType.DEPOSIT,new BigDecimal("116.8").setScale(2, RoundingMode.HALF_EVEN)),
+                    new Transaction(id1,LocalDate.of(2022,4,30), BigDecimal.valueOf(-52.90)
+                            .setScale(2, RoundingMode.HALF_EVEN),TransactionType.WITHDRAW,new BigDecimal("63.9").setScale(2, RoundingMode.HALF_EVEN)));
+        }
+
     }
+}

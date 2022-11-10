@@ -3,6 +3,7 @@ package io.weber.service;
 import io.weber.exception.InvalidTransactionException;
 import io.weber.exception.NotFoundAccountException;
 import io.weber.exception.OverdraftException;
+import io.weber.printer.AccountStatementPrinter;
 import io.weber.repository.AccountRepository;
 import io.weber.repository.TransactionRepository;
 
@@ -16,9 +17,12 @@ public class NoOverdraftAccountService implements BankService{
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
 
-    public NoOverdraftAccountService(AccountRepository accountRepository, TransactionRepository transactionRepository){
+    private final AccountStatementPrinter printer;
+
+    public NoOverdraftAccountService(AccountRepository accountRepository, TransactionRepository transactionRepository, AccountStatementPrinter printer){
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
+        this.printer = printer;
     }
 
     @Override
@@ -43,7 +47,16 @@ public class NoOverdraftAccountService implements BankService{
         return addTransaction(id,LocalDate.now(),amountScale,TransactionType.WITHDRAW,balance.subtract(amountScale));
     }
 
-    private void validateInput(UUID id, BigDecimal amount)throws NotFoundAccountException,InvalidTransactionException{
+    @Override
+    public void printAccountStatement(UUID id) throws NotFoundAccountException{
+        if(!accountRepository.ifAccountExist(id)){
+            throw new NotFoundAccountException("Account id not found");
+        }
+        var list = transactionRepository.getAllTransactions(id);
+        printer.print(list);
+    }
+
+    private void validateInput(UUID id, BigDecimal amount) throws NotFoundAccountException,InvalidTransactionException{
         if(!accountRepository.ifAccountExist(id)){
             throw new NotFoundAccountException("Account id not found");
         }

@@ -11,5 +11,7 @@ public interface BankService {
     Transaction deposit(UUID id, BigDecimal amount) throws NotFoundAccountException, InvalidTransactionException;
     Transaction withdraw(UUID id, BigDecimal amount) throws NotFoundAccountException
             ,InvalidTransactionException, OverdraftException;
+    void printAccountStatement(UUID id) throws NotFoundAccountException;
+
 
 }
