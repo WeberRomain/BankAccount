@@ -22,7 +22,7 @@ public class NoOverdraftAccountService implements BankService{
     }
 
     @Override
-    public Transaction deposit(UUID id, BigDecimal amount){
+    public Transaction deposit(UUID id, BigDecimal amount) throws NotFoundAccountException,InvalidTransactionException{
         validateInput(id,amount);
         var amountScale = amount.setScale(2, RoundingMode.HALF_EVEN);
         var balance = getLastBalance(id);
@@ -30,7 +30,8 @@ public class NoOverdraftAccountService implements BankService{
     }
 
     @Override
-    public Transaction withdraw(UUID id, BigDecimal amount) {
+    public Transaction withdraw(UUID id, BigDecimal amount) throws NotFoundAccountException
+            ,InvalidTransactionException,OverdraftException {
         validateInput(id,amount);
         var amountScale = amount.setScale(2, RoundingMode.HALF_EVEN);
         var balance = getLastBalance(id);
@@ -42,7 +43,7 @@ public class NoOverdraftAccountService implements BankService{
         return addTransaction(id,LocalDate.now(),amountScale,TransactionType.WITHDRAW,balance.subtract(amountScale));
     }
 
-    private void validateInput(UUID id, BigDecimal amount){
+    private void validateInput(UUID id, BigDecimal amount)throws NotFoundAccountException,InvalidTransactionException{
         if(!accountRepository.ifAccountExist(id)){
             throw new NotFoundAccountException("Account id not found");
         }

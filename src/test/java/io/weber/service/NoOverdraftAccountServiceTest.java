@@ -2,6 +2,7 @@ package io.weber.service;
 
 import io.weber.exception.InvalidTransactionException;
 import io.weber.exception.NotFoundAccountException;
+import io.weber.exception.OverdraftException;
 import io.weber.repository.AccountRepository;
 import io.weber.repository.TransactionRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +40,7 @@ public class NoOverdraftAccountServiceTest {
 
         @Test
         @DisplayName("should work with no initial balance on a known account")
-        void workWithoutInitialBalance() {
+        void workWithoutInitialBalance() throws NotFoundAccountException, InvalidTransactionException {
             var accountId = UUID.randomUUID();
             var amount = new BigDecimal(150).setScale(2, RoundingMode.HALF_EVEN);
             var newTransaction = new Transaction(accountId, LocalDate.now(),amount,
@@ -60,7 +61,7 @@ public class NoOverdraftAccountServiceTest {
 
         @Test
         @DisplayName("should work with an initial balance on a known account")
-        void workWithInitialBalance() {
+        void workWithInitialBalance() throws NotFoundAccountException, InvalidTransactionException {
             var accountId = UUID.randomUUID();
             var amount = new BigDecimal(150).setScale(2, RoundingMode.HALF_EVEN);
             var lastTransaction = new Transaction(accountId, LocalDate.now(),
@@ -116,7 +117,7 @@ public class NoOverdraftAccountServiceTest {
 
         @Test
         @DisplayName("should work with an initial balance on a known account")
-        void workWithInitialBalance() {
+        void workWithInitialBalance() throws NotFoundAccountException, OverdraftException, InvalidTransactionException {
             var accountId = UUID.randomUUID();
             var amount = new BigDecimal(150).setScale(2, RoundingMode.HALF_EVEN);
             var lastTransaction = new Transaction(accountId, LocalDate.now(),
@@ -202,5 +203,4 @@ public class NoOverdraftAccountServiceTest {
             verifyNoMoreInteractions(accountRepository);
         }
     }
-
-}
+    }
